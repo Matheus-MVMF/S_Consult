@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 from datetime import datetime
+import time
 import backend  # Importa nossa lógica separada
 
 # --- CONFIGURAÇÃO INICIAL ---
@@ -78,8 +79,9 @@ with col_center:
             )
             
             st.write("") 
-            
-            # Botão de Gerar
+
+# ... (seu código anterior do botão) ...
+
             if st.button("✨ GERAR RELATÓRIO DETALHADO", type="primary"):
                 with st.spinner("👷‍♂️ Engenharia AI processando dados..."):
                     
@@ -87,26 +89,37 @@ with col_center:
                     texto_pdf = backend.ler_pdf(arquivo_selecionado)
                     
                     if texto_pdf and len(texto_pdf) > 50:
-                        resumo = backend.gerar_resumo_tecnico(texto_pdf, st.session_state.modelo_atual)
-                        
-                        # Salva histórico
-                        hora = datetime.now().strftime("%H:%M")
-                        nome_curto = os.path.basename(arquivo_selecionado)[:20]
-                        st.session_state.historico.append({"hora": hora, "trecho": nome_curto, "conteudo": resumo})
-                        
-                        # Mostra resultado
-                        st.markdown("### 📝 Relatório Final")
-                        st.markdown(f'<div class="result-container">{resumo}</div>', unsafe_allow_html=True)
-                        
-                        col1, col2, col3 = st.columns([1, 2, 1])
-                        with col2:
-                            st.download_button(
-                                label="📥 BAIXAR ARQUIVO .TXT",
-                                data=resumo,
-                                file_name=f"Resumo_SConsult_{os.path.basename(arquivo_selecionado)}.txt",
-                                mime="text/plain",
-                                use_container_width=True
-                            )
+                        try:
+                            resumo = backend.gerar_resumo_tecnico(texto_pdf, st.session_state.modelo_atual)
+                            
+                            # Salva histórico
+                            hora = datetime.now().strftime("%H:%M")
+                            nome_curto = os.path.basename(arquivo_selecionado)[:20]
+                            st.session_state.historico.append({"hora": hora, "trecho": nome_curto, "conteudo": resumo})
+                            
+                            # Mostra resultado
+                            st.markdown("### 📝 Relatório Final")
+                            st.markdown(f'<div class="result-container">{resumo}</div>', unsafe_allow_html=True)
+                            
+                            col1, col2, col3 = st.columns([1, 2, 1])
+                            with col2:
+                                st.download_button(
+                                    label="📥 BAIXAR ARQUIVO .TXT",
+                                    data=resumo,
+                                    file_name=f"Resumo_SConsult_{os.path.basename(arquivo_selecionado)}.txt",
+                                    mime="text/plain",
+                                    use_container_width=True
+                                )
+                            
+                            # --- O SEGREDO: PAUSA PARA NÃO DAR ERRO 429 ---
+                            st.warning("⏳ Aguardando 20 segundos para recarregar a cota gratuita da IA...")
+                            time.sleep(20) # Pausa de 20 segundos
+                            st.success("✅ Sistema pronto para a próxima análise!")
+                            # ----------------------------------------------
+
+                        except Exception as e:
+                            st.error(f"⚠️ A IA está sobrecarregada. Espere 1 minuto e tente de novo. Erro: {e}")
+
                     else:
                         st.error("❌ Erro: PDF sem texto selecionável.")
 
